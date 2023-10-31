@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from requests_cache import CachedSession
 from tqdm import tqdm
 
+from configs import configure_argument_parser
 from constants import BASE_DIR, MAIN_DOC_URL
 
 
@@ -97,3 +98,21 @@ def download():
 
     with open(archive_path, 'wb') as file:
         file.write(response.content)
+
+
+MODE_TO_FUNCTION = {
+    'whats-new': whats_new,
+    'latest-versions': latest_versions,
+    'download': download,
+}
+
+
+def main():
+    arg_parser = configure_argument_parser(MODE_TO_FUNCTION.keys())
+    args = arg_parser.parse_args()
+    parser_mode = args.mode
+    results = MODE_TO_FUNCTION[parser_mode]()
+
+
+if __name__ == '__main__':
+    main()
