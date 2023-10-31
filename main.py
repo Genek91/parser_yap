@@ -7,11 +7,11 @@ from tqdm import tqdm
 
 from configs import configure_argument_parser
 from constants import BASE_DIR, MAIN_DOC_URL
+from outputs import control_output
 
 
-def whats_new():
+def whats_new(session):
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
-    session = CachedSession()
     response = session.get(whats_new_url)
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, features='lxml')
@@ -22,7 +22,7 @@ def whats_new():
         'li', attrs={'class': 'toctree-l1'}
     )
 
-    results = []
+    results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
     for section in tqdm(sections_by_python):
         version_a_tag = section.find('a')
         href = version_a_tag['href']
@@ -35,12 +35,10 @@ def whats_new():
         dl_text = dl.text.replace('\n', ' ')
         results.append((version_link, h1.text, dl_text))
 
-    for row in results:
-        print(*row)
+    return results
 
 
-def latest_versions():
-    session = CachedSession()
+def latest_versions(session):
     response = session.get(MAIN_DOC_URL)
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, features='lxml')
@@ -55,7 +53,7 @@ def latest_versions():
         else:
             raise Exception('Ничего не нашлось')
 
-    results = []
+    results = [('Ссылка на документацию', 'Версия', 'Статус')]
     pattern = r'Python (?P<version>\d\.\d+) \((?P<status>.*)\)'
 
     for a_tag in a_tags:
@@ -69,13 +67,11 @@ def latest_versions():
 
         results.append((link, version, status))
 
-    for row in results:
-        print(*row)
+    return results
 
 
-def download():
+def download(session):
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
-    session = CachedSession()
     response = session.get(downloads_url)
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, features='lxml')
@@ -99,6 +95,8 @@ def download():
     with open(archive_path, 'wb') as file:
         file.write(response.content)
 
+    print(f'Download completed: {filename}')
+
 
 MODE_TO_FUNCTION = {
     'whats-new': whats_new,
@@ -110,8 +108,17 @@ MODE_TO_FUNCTION = {
 def main():
     arg_parser = configure_argument_parser(MODE_TO_FUNCTION.keys())
     args = arg_parser.parse_args()
+    session = CachedSession()
+
+    if args.clear_cache:
+        session.cache.clear()
+        print('Cache clear')
+
     parser_mode = args.mode
-    results = MODE_TO_FUNCTION[parser_mode]()
+    results = MODE_TO_FUNCTION[parser_mode](session)
+
+    if results:
+        control_output(results, args)
 
 
 if __name__ == '__main__':
