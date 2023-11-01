@@ -108,8 +108,8 @@ MODE_TO_FUNCTION = {
 def main():
     arg_parser = configure_argument_parser(MODE_TO_FUNCTION.keys())
     args = arg_parser.parse_args()
-    session = CachedSession()
 
+    session = CachedSession()
     if args.clear_cache:
         session.cache.clear()
         print('Cache clear')
