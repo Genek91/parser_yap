@@ -15,10 +15,10 @@ def configure_argument_parser(available_modes):
         help='Очистка кеша'
     )
     parser.add_argument(
-        '-p',
-        '--pretty',
-        action='store_true',
-        help='Вывод в формате PrettyTable'
+        '-o',
+        '--output',
+        choices=('pretty', 'file'),
+        help='Дополнительные способы вывода данных'
     )
 
     return parser
