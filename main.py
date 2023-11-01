@@ -9,30 +9,38 @@ from tqdm import tqdm
 from configs import configure_argument_parser, configure_logging
 from constants import BASE_DIR, MAIN_DOC_URL
 from outputs import control_output
+from utils import find_tag, get_response
 
 
 def whats_new(session):
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
-    response = session.get(whats_new_url)
-    response.encoding = 'utf-8'
-    soup = BeautifulSoup(response.text, features='lxml')
+    response = get_response(session, whats_new_url)
+    if not response:
+        return
 
-    main_div = soup.find(name='section', attrs={'id': 'what-s-new-in-python'})
-    div_with_ul = main_div.find(name='div', attrs={'class': 'toctree-wrapper'})
+    soup = BeautifulSoup(response.text, features='lxml')
+    main_div = find_tag(
+        soup=soup, tag='section', attrs={'id': 'what-s-new-in-python'}
+    )
+    div_with_ul = find_tag(
+        soup=main_div, tag='div', attrs={'class': 'toctree-wrapper'}
+    )
     sections_by_python = div_with_ul.find_all(
         'li', attrs={'class': 'toctree-l1'}
     )
 
     results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
     for section in tqdm(sections_by_python):
-        version_a_tag = section.find('a')
+        version_a_tag = find_tag(soup=section, tag='a')
         href = version_a_tag['href']
         version_link = urljoin(whats_new_url, href)
-        response = session.get(version_link)
-        response.encoding = 'utf-8'
+        response = get_response(session, version_link)
+        if not response:
+            continue
+
         soup = BeautifulSoup(response.text, features='lxml')
-        h1 = soup.find(name='h1')
-        dl = soup.find(name='dl')
+        h1 = find_tag(soup=soup, tag='h1')
+        dl = find_tag(soup=soup, tag='dl')
         dl_text = dl.text.replace('\n', ' ')
         results.append((version_link, h1.text, dl_text))
 
@@ -40,11 +48,14 @@ def whats_new(session):
 
 
 def latest_versions(session):
-    response = session.get(MAIN_DOC_URL)
-    response.encoding = 'utf-8'
-    soup = BeautifulSoup(response.text, features='lxml')
+    response = get_response(session, MAIN_DOC_URL)
+    if not response:
+        return
 
-    sidebar = soup.find(name='div', attrs={'class': 'sphinxsidebarwrapper'})
+    soup = BeautifulSoup(response.text, features='lxml')
+    sidebar = find_tag(
+        soup=soup, tag='div', attrs={'class': 'sphinxsidebarwrapper'}
+    )
     ul_tags = sidebar.find_all(name='ul')
 
     for ul in ul_tags:
@@ -73,15 +84,16 @@ def latest_versions(session):
 
 def download(session):
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
-    response = session.get(downloads_url)
-    response.encoding = 'utf-8'
-    soup = BeautifulSoup(response.text, features='lxml')
+    response = get_response(session, downloads_url)
+    if not response:
+        return
 
-    table_tag = soup.find(
-        name='table', attrs={'class': 'docutils'}
+    soup = BeautifulSoup(response.text, features='lxml')
+    table_tag = find_tag(
+        soup=soup, tag='table', attrs={'class': 'docutils'}
     )
-    zip_tag = table_tag.find(
-        name='a', attrs={'href': re.compile(r'.+\.zip$')}
+    zip_tag = find_tag(
+        soup=table_tag, tag='a', attrs={'href': re.compile(r'.+\.zip$')}
     )
     link = zip_tag['href']
     archive_url = urljoin(downloads_url, link)
