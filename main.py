@@ -1,3 +1,4 @@
+import logging
 import re
 from urllib.parse import urljoin
 
@@ -5,7 +6,7 @@ from bs4 import BeautifulSoup
 from requests_cache import CachedSession
 from tqdm import tqdm
 
-from configs import configure_argument_parser
+from configs import configure_argument_parser, configure_logging
 from constants import BASE_DIR, MAIN_DOC_URL
 from outputs import control_output
 
@@ -95,7 +96,7 @@ def download(session):
     with open(archive_path, 'wb') as file:
         file.write(response.content)
 
-    print(f'Download completed: {filename}')
+    logging.info(f'Архив был загружен и сохранён: {archive_path}')
 
 
 MODE_TO_FUNCTION = {
@@ -106,19 +107,23 @@ MODE_TO_FUNCTION = {
 
 
 def main():
+    configure_logging()
+    logging.info('Парсер запущен!')
+
     arg_parser = configure_argument_parser(MODE_TO_FUNCTION.keys())
     args = arg_parser.parse_args()
+    logging.info(f'Аргументы командной строки: {args}')
 
     session = CachedSession()
     if args.clear_cache:
         session.cache.clear()
-        print('Cache clear')
 
     parser_mode = args.mode
     results = MODE_TO_FUNCTION[parser_mode](session)
 
     if results:
         control_output(results, args)
+    logging.info('Парсер завершил работу.')
 
 
 if __name__ == '__main__':

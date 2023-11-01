@@ -1,5 +1,6 @@
 import csv
 import datetime as dt
+import logging
 
 from prettytable import PrettyTable
 
@@ -45,4 +46,4 @@ def file_output(results, args):
         writer = csv.writer(csvfile, dialect='unix')
         writer.writerows(results)
 
-    print(f'Download completed: {file_name}')
+    logging.info(f'Файл с результатами был сохранён: {file_path}')
